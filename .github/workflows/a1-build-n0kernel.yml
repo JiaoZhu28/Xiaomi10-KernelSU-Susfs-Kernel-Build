@@ -61,6 +61,8 @@ jobs:
           ls
           echo "复制补丁（来自主仓库 patches/）"
           cp $GITHUB_WORKSPACE/patches/* .
+          echo "统一补丁行尾符 CRLF -> LF"
+          for f in *.patch; do sed -i 's/\r$//' "$f"; done
           echo "应用 new_defconfig.patch"
           patch -p1 < new_defconfig.patch
           echo "应用 non-kprobes.patch"

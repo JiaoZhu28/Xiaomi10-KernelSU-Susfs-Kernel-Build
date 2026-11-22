@@ -40,9 +40,9 @@ jobs:
         run: |
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace
           cd $GITHUB_WORKSPACE/kernel_workspace
-          wget -q https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240125-release/Clang-19.0.0git-20240125.tar.gz
+          wget -q https://github.com/ZyCromerZ/Clang/releases/download/18.0.0-20240921-release/Clang-18.0.0-20240921.tar.gz
           mkdir -p clang
-          tar -xzf Clang-19.0.0git-20240125.tar.gz -C clang
+          tar -xzf Clang-18.0.0-20240921.tar.gz -C clang
 
       - name: 2.拉取源码与SUSFS
         run: |
@@ -85,6 +85,8 @@ jobs:
           fi
 
       - name: 6.开始构建
+        env:
+          KCFLAGS: "-mllvm -regalloc-enable-advisor=default"
         run: |
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
           echo "Updated PATH: $PATH"
@@ -97,7 +99,7 @@ jobs:
           else
             echo "版本输入为空"
           fi
-
+          
           if [ ${{ inputs.phone }} = 'umi' ]; then
             echo "选择小米10配置"
             DEFCONFIG=vendor/umi_defconfig

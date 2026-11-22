@@ -36,16 +36,22 @@ jobs:
       - name: 0.检出本仓库
         uses: actions/checkout@v4
 
-      - name: 1.拉取编译链
+      - name: 1.安装上游 LLVM 14
         run: |
-          mkdir -p $GITHUB_WORKSPACE/kernel_workspace
-          cd $GITHUB_WORKSPACE/kernel_workspace
-          wget -q https://github.com/ZyCromerZ/Clang/releases/download/14.0.6-20261022-release/Clang-14.0.6-20261022.tar.gz
-          mkdir -p clang
-          tar -xzf Clang-14.0.6-20261022.tar.gz -C clang
+          if [ ! -d /usr/lib/llvm-14/bin ]; then
+            echo "系统无 llvm-14，开始安装"
+            sudo apt-get update -qq
+            sudo apt-get install -y clang-14 llvm-14 lld-14
+          else
+            echo "系统已自带 llvm-14"
+          fi
+          echo "/usr/lib/llvm-14/bin" >> $GITHUB_PATH
+          /usr/lib/llvm-14/bin/clang --version
+          ls /usr/lib/llvm-14/bin | head -40
 
       - name: 2.拉取源码与SUSFS
         run: |
+          mkdir -p $GITHUB_WORKSPACE/kernel_workspace
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone -b staging-umi https://github.com/jhchong94/kernel_xiaomi_sm8250_n0kernel --depth=1 android_kernel
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19 --depth=1 susfs
@@ -86,9 +92,11 @@ jobs:
 
       - name: 6.开始构建
         run: |
-          export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
-          echo "Updated PATH: $PATH"
+          echo "=== 编译器 ==="
+          which clang
           clang --version
+          which ld.lld
+          which llvm-ar
 
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
 

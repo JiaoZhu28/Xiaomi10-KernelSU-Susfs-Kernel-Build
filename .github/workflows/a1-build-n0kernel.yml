@@ -85,8 +85,6 @@ jobs:
           fi
 
       - name: 6.开始构建
-        env:
-          KCFLAGS: "-mllvm -regalloc-enable-advisor=default"
         run: |
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
           echo "Updated PATH: $PATH"
@@ -99,7 +97,7 @@ jobs:
           else
             echo "版本输入为空"
           fi
-          
+
           if [ ${{ inputs.phone }} = 'umi' ]; then
             echo "选择小米10配置"
             DEFCONFIG=vendor/umi_defconfig

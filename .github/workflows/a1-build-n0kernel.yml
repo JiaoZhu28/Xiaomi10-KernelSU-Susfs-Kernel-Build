@@ -41,11 +41,10 @@ jobs:
           mkdir -p clang
           tar -xzf Clang-19.0.0git-20240125.tar.gz -C clang
 
-      - name: 2.拉取源码与补丁
+      - name: 2.拉取源码与SUSFS
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone https://github.com/JiaoZhu28/kernel_xiaomi_sm8250_n0kernel --depth=1 android_kernel
-          git clone https://github.com/JiaoZhu28/kernel.git src
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19 --depth=1 susfs
 
       - name: 3.添加KernelSU Next
@@ -55,11 +54,13 @@ jobs:
 
       - name: 4.修补KernelSU Next
         run: |
-          ls
-          echo "进入源码目录"
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
-          cp $GITHUB_WORKSPACE/kernel_workspace/src/patches/* .
+          ls
+          echo "复制补丁（来自主仓库 patches/）"
+          cp $GITHUB_WORKSPACE/patches/* .
+          echo "应用 new_defconfig.patch"
           patch -p1 < new_defconfig.patch
+          echo "应用 non-kprobes.patch"
           patch -p1 < non-kprobes.patch
 
       - name: 5.修补susfs
@@ -67,11 +68,8 @@ jobs:
           if [ ${{ inputs.susfs }} = 'SUSFS' ]; then
             echo "选择susfs修补"
             cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
-            echo "复制susfs/kernel_patches/fs/"
             cp $GITHUB_WORKSPACE/kernel_workspace/susfs/kernel_patches/fs/* ./fs/
-            echo "复制susfs/kernel_patches/include/linux/"
             cp $GITHUB_WORKSPACE/kernel_workspace/susfs/kernel_patches/include/linux/* ./include/linux/
-            echo "复制susfs内核补丁"
             cp $GITHUB_WORKSPACE/kernel_workspace/susfs/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
             echo "执行susfs补丁"
             patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
@@ -88,12 +86,11 @@ jobs:
           clang --version
 
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
-          # 自定义版本
           if [ ! -z ${{ inputs.version }} ]; then
-            echo "不为空"
+            echo "自定义版本: ${{ inputs.version }}"
             sed -i '$s|echo "\$res"|echo "-${{ inputs.version }}"|' ./scripts/setlocalversion
           else
-            echo "输入为空"
+            echo "版本输入为空"
           fi
 
           if [ ${{ inputs.phone }} = 'umi' ]; then
@@ -104,6 +101,7 @@ jobs:
             DEFCONFIG=vendor/cmi_defconfig
           else
             echo "输入错误"
+            exit 1
           fi
 
           echo "当前配置为 $DEFCONFIG"
@@ -113,16 +111,15 @@ jobs:
 
       - name: 7.复制boot文件
         run: |
-            cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel/out/arch/arm64/boot
-            ls
-            strings Image | grep "Linux version"
-            mkdir $GITHUB_WORKSPACE/kernel_workspace/src/Anykernel/kernels/
-            mkdir $GITHUB_WORKSPACE/kernel_workspace/src/Anykernel/kernels/miui/
-            cp Image $GITHUB_WORKSPACE/kernel_workspace/src/Anykernel/kernels/miui/
+          cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel/out/arch/arm64/boot
+          ls
+          strings Image | grep "Linux version"
+          mkdir -p $GITHUB_WORKSPACE/Anykernel/kernels/miui/
+          cp Image $GITHUB_WORKSPACE/Anykernel/kernels/miui/
 
       - name: 8.上传刷机包
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.phone }}-KernelSU-Next-${{ inputs.susfs }}-AnyKernel3
-          path: kernel_workspace/src/Anykernel/*
+          path: Anykernel/*
           retention-days: 3

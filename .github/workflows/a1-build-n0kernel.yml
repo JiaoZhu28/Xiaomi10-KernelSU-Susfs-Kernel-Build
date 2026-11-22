@@ -97,12 +97,21 @@ jobs:
 
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
 
-          echo "=== 移除依赖 MLGO 定制编译器的参数 ==="
+          echo "=== 清理不兼容的编译参数 ==="
+          # 1) MLGO：需要专用 clang 的模型文件
           sed -i '/-mllvm -regalloc-enable-advisor=release/d' Makefile
           sed -i '/-mllvm -enable-ml-inliner=release/d' Makefile
+          # 2) cuda-path：对内核编译无意义
           sed -i 's|--cuda-path=/dev/null||' Makefile
-          echo "剩余 mllvm 参数："
+          # 3) -fsplit-machine-functions：仅 x86 后端支持
+          sed -i '/-fsplit-machine-functions/d' Makefile
+          # 4) polly：Ubuntu clang 未编译 polly 库
+          sed -i 's/^ifdef CONFIG_POLLY_CLANG$/ifdef CONFIG_POLLY_CLANG_DISABLED/' Makefile
+
+          echo "清理后剩余的 mllvm 参数："
           grep -n "mllvm" Makefile || echo "  (无)"
+          echo "polly 块开关状态："
+          grep -n "CONFIG_POLLY_CLANG" Makefile || echo "  (未找到)"
 
           echo "=== 停用 syscall 完整性检查 ==="
           printf '#!/bin/sh\nexit 0\n' > scripts/checksyscalls.sh

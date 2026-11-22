@@ -33,6 +33,9 @@ jobs:
       CI: "false"
     steps:
 
+      - name: 0.检出本仓库
+        uses: actions/checkout@v4
+
       - name: 1.拉取编译链
         run: |
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace

@@ -47,7 +47,6 @@ jobs:
           fi
           echo "/usr/lib/llvm-14/bin" >> $GITHUB_PATH
           /usr/lib/llvm-14/bin/clang --version
-          ls /usr/lib/llvm-14/bin | head -40
 
       - name: 2.拉取源码与SUSFS
         run: |
@@ -95,12 +94,17 @@ jobs:
           echo "=== 编译器 ==="
           which clang
           clang --version
-          which ld.lld
-          which llvm-ar
 
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
 
-          echo "停用 syscall 完整性检查（避免 clang -E 模式的 SIGPIPE）"
+          echo "=== 移除依赖 MLGO 定制编译器的参数 ==="
+          sed -i '/-mllvm -regalloc-enable-advisor=release/d' Makefile
+          sed -i '/-mllvm -enable-ml-inliner=release/d' Makefile
+          sed -i 's|--cuda-path=/dev/null||' Makefile
+          echo "剩余 mllvm 参数："
+          grep -n "mllvm" Makefile || echo "  (无)"
+
+          echo "=== 停用 syscall 完整性检查 ==="
           printf '#!/bin/sh\nexit 0\n' > scripts/checksyscalls.sh
           chmod +x scripts/checksyscalls.sh
 

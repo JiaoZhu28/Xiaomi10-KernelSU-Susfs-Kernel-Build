@@ -44,14 +44,14 @@ jobs:
       - name: 2.拉取源码与补丁
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          git clone https://github.com/clcwpwqi/kernel_xiaomi_sm8250_n0kernel --depth=1 android_kernel
-          git clone https://github.com/clcwpwqi/kernel.git src
+          git clone https://github.com/JiaoZhu28/kernel_xiaomi_sm8250_n0kernel --depth=1 android_kernel
+          git clone https://github.com/JiaoZhu28/kernel.git src
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19 --depth=1 susfs
 
       - name: 3.添加KernelSU Next
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/legacy/kernel/setup.sh" | bash
 
       - name: 4.修补KernelSU Next
         run: |
@@ -76,17 +76,17 @@ jobs:
             echo "执行susfs补丁"
             patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
             echo "修复susfs补丁"
-            patch -p1 < after_patch_fix.patch            
+            patch -p1 < after_patch_fix.patch
           else
             echo "跳过susfs修补"
           fi
-        
+
       - name: 6.开始构建
         run: |
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
           echo "Updated PATH: $PATH"
           clang --version
-          
+
           cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel
           # 自定义版本
           if [ ! -z ${{ inputs.version }} ]; then
@@ -109,8 +109,8 @@ jobs:
           echo "当前配置为 $DEFCONFIG"
 
           make -j$(nproc --all) CC=clang O=out ARCH=arm64 CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-buildroot-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-androideabi- $DEFCONFIG
-          make -j8 CC=clang O=out ARCH=arm64 CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi-    
-      
+          make -j8 CC=clang O=out ARCH=arm64 CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi-
+
       - name: 7.复制boot文件
         run: |
             cd $GITHUB_WORKSPACE/kernel_workspace/android_kernel/out/arch/arm64/boot
